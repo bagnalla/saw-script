@@ -261,38 +261,109 @@ IntModNum : (num : Num) -> sort 0;
 IntModNum num =
   Num#rec1 (\ (n : Num) -> sort 0) IntMod Integer num;
 
--------------------------------------------------------------------------------
--- Rationals (TODO)
+--------------------------------------------------------------------------------
+-- Rationals
 
 Rational : sort 0;
-Rational = #();
+Rational = Integer * Integer;
+  -- Rational numbers represented as (numerator, denominator).
+
+rationalNum : Rational -> Integer;
+rationalNum x = fst Integer Integer x;
+
+rationalDenom : Rational -> Integer;
+rationalDenom x = snd Integer Integer x;
+
+normalizeRationalSign : Rational -> Rational;
+normalizeRationalSign x =
+  ite Rational (intLt (rationalDenom x) (natToInt 0))
+  (intNeg (rationalNum x), intNeg (rationalDenom x))
+  x;
 
 ecRatio : Integer -> Integer -> Rational;
-ecRatio x y = ();
+ecRatio x y =
+  ite Rational (intEq y (natToInt 0))
+  (error Rational "Divide by zero")
+  (x, y);
 
 eqRational : Rational -> Rational -> Bool;
-eqRational x y = error Bool "Unimplemented: (==) Rational";
-
-leRational : Rational -> Rational -> Bool;
-leRational x y = error Bool "Unimplemented: (<=) Rational";
+eqRational x y =
+  intEq
+    (intMul (rationalNum x) (rationalDenom y))
+    (intMul (rationalDenom x) (rationalNum y));
 
 ltRational : Rational -> Rational -> Bool;
-ltRational x y = error Bool "Unimplemented: (<) Rational";
+ltRational x y =
+  (\ (x' : Rational) ->
+    \ (y' : Rational) ->
+      intLt
+        (intMul (rationalNum x') (rationalDenom y'))
+        (intMul (rationalDenom x') (rationalNum y')))
+  (normalizeRationalSign x)
+  (normalizeRationalSign y);
+
+leRational : Rational -> Rational -> Bool;
+leRational x y = or (ltRational x y) (eqRational x y);
 
 addRational : Rational -> Rational -> Rational;
-addRational x y = error Rational "Unimplemented: (+) Rational";
+addRational x y =
+  ecRatio
+    (intAdd (intMul (rationalNum x) (rationalDenom y))
+            (intMul (rationalDenom x) (rationalNum y)))
+    (intMul (rationalDenom x) (rationalDenom y));
 
 subRational : Rational -> Rational -> Rational;
-subRational x y = error Rational "Unimplemented: (-) Rational";
+subRational x y =
+  ecRatio
+    (intSub (intMul (rationalNum x) (rationalDenom y))
+            (intMul (rationalDenom x) (rationalNum y)))
+    (intMul (rationalDenom x) (rationalDenom y));
 
 mulRational : Rational -> Rational -> Rational;
-mulRational x y = error Rational "Unimplemented: (*) Rational";
+mulRational x y =
+  ecRatio
+    (intMul (rationalNum x) (rationalNum y))
+    (intMul (rationalDenom x) (rationalDenom y));
 
 negRational : Rational -> Rational;
-negRational x = error Rational "Unimplemented: negate Rational";
+negRational x = (intNeg (rationalNum x), rationalDenom x);
 
 integerToRational : Integer -> Rational;
-integerToRational x = error Rational "Unimplemented: fromInteger Rational";
+integerToRational x = (x, natToInt 1);
+
+floorRational : Rational -> Integer;
+floorRational x = intDiv (rationalNum x) (rationalDenom x);
+
+ceilingRational : Rational -> Integer;
+ceilingRational x = intNeg (floorRational (negRational x));
+
+truncRational : Rational -> Integer;
+truncRational x =
+  ite Integer (ltRational x (integerToRational (natToInt 0)))
+  (ceilingRational x)
+  (floorRational x);
+
+roundAwayRational : Rational -> Integer;
+roundAwayRational x =
+  (\ (half : Rational) ->
+    ite Integer (ltRational x (integerToRational (natToInt 0)))
+    (ceilingRational (subRational x half))
+    (floorRational (addRational x half)))
+  (ecRatio (natToInt 1) (natToInt 2));
+
+roundToEvenRational : Rational -> Integer;
+roundToEvenRational x =
+  (\ (lo : Integer) ->
+    \ (hi : Integer) ->
+    \ (diff : Rational) ->
+    \ (half : Rational) ->
+      ite Integer (ltRational diff half) lo
+      (ite Integer (ltRational half diff) hi
+      (ite Integer (intEq (intMod lo (natToInt 2)) (natToInt 0)) lo hi)))
+  (floorRational x)
+  (intAdd (floorRational x) (natToInt 1))
+  (subRational x (integerToRational (floorRational x)))
+  (ecRatio (natToInt 1) (natToInt 2));
 
 --------------------------------------------------------------------------------
 -- Type coercions
@@ -1156,8 +1227,8 @@ PField a =
 PFieldRational : PField Rational;
 PFieldRational =
   { fieldRing = PRingRational
-  , recip     = \(x : Rational) -> error Rational "Unimplemented: recip Rational"
-  , fieldDiv  = \(x y : Rational) -> error Rational "Unimplemented: (/.) Rational"
+  , recip     = \(x : Rational) -> ecRatio (rationalDenom x) (rationalNum x)
+  , fieldDiv  = \(x y : Rational) -> mulRational x (ecRatio (rationalDenom y) (rationalNum y))
   };
 
 
@@ -1192,11 +1263,11 @@ PRoundRational : PRound Rational;
 PRoundRational =
   { roundField  = PFieldRational
   , roundCmp    = PCmpRational
-  , floor       = \(x : Rational) -> error Integer "Unimplemented: floor Rational"
-  , ceiling     = \(x : Rational) -> error Integer "Unimplemented: ceiling Rational"
-  , trunc       = \(x : Rational) -> error Integer "Unimplemented: trunc Rational"
-  , roundAway   = \(x : Rational) -> error Integer "Unimplemented: roundAway Rational"
-  , roundToEven = \(x : Rational) -> error Integer "Unimplemented: roundToEven Rational"
+  , floor       = floorRational
+  , ceiling     = ceilingRational
+  , trunc       = truncRational
+  , roundAway   = roundAwayRational
+  , roundToEven = roundToEvenRational
   };
 
 
@@ -1231,7 +1302,7 @@ PLiteralIntModNum num =
   Num#rec1 (\ (n : Num) -> PLiteral (IntModNum n)) PLiteralIntMod PLiteralInteger num;
 
 PLiteralRational : PLiteral Rational;
-PLiteralRational = \ (x : Nat) -> error Rational "Unimplemented: Literal Rational";
+PLiteralRational = \ (x : Nat) -> integerToRational (natToInt x);
 
 -- Compared to Cryptol class 'FLiteral m n r a', we omit the 'm', 'n', and
 -- 'r' parameters here. They are passed explicitly to 'ecFraction' instead.

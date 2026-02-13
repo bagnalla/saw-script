@@ -1,0 +1,14 @@
+enable_experimental;
+
+_ <- prove_print z3 {{ roundAway ((ratio 3 2) : Rational) == 2 }};
+_ <- prove_print z3 {{ roundAway ((ratio 1 2) : Rational) == 1 }};
+_ <- prove_print z3 {{ roundAway ((ratio (-3) 2) : Rational) == -2 }};
+_ <- prove_print z3 {{ roundAway ((ratio (-1) 2) : Rational) == -1 }};
+
+_ <- prove_print z3 {{ floor ((ratio 3 2) : Rational) == 1 }};
+_ <- prove_print z3 {{ ceiling ((ratio 3 2) : Rational) == 2 }};
+_ <- prove_print z3 {{ trunc ((ratio (-3) 2) : Rational) == -1 }};
+_ <- prove_print z3 {{ roundToEven ((ratio 1 2) : Rational) == 0 }};
+_ <- prove_print z3 {{ roundToEven ((ratio 3 2) : Rational) == 2 }};
+
+print "roundAway Rational regression: ok";
