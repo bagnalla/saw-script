@@ -333,6 +333,9 @@ importType sc env ty =
             C.PLiteralLessThan -> -- we omit first argument to class LiteralLessThan
               do a <- go (tyargs !! 1)
                  scGlobalApply sc "Cryptol.PLiteralLessThan" [a]
+            C.PFLiteral -> -- we omit first three arguments to class FLiteral
+              do a <- go (tyargs !! 3)
+                 scGlobalApply sc "Cryptol.PFLiteral" [a]
             _ ->
               do pc' <- importPC sc pc
                  tyargs' <- traverse go tyargs
@@ -360,6 +363,7 @@ isErasedProp prop =
     C.TCon (C.PC C.PSignedCmp      ) _ -> False
     C.TCon (C.PC C.PLiteral        ) _ -> False
     C.TCon (C.PC C.PLiteralLessThan) _ -> False
+    C.TCon (C.PC C.PFLiteral       ) _ -> False
     _ -> True
 
 -- | Translate a 'Prop' containing a numeric constraint to a 'Term' that tests
@@ -762,6 +766,15 @@ provePropRec sc env prop0 prop =
           -> do e' <- importType sc env e
                 p' <- importType sc env p
                 scGlobalApply sc "Cryptol.PLiteralFloat" [e', p']
+
+        -- instance FLiteral m n r Rational
+        (C.pIsFLiteral -> Just (_, _, _, C.tIsRational -> True))
+          -> do scGlobalApply sc "Cryptol.PFLiteralRational" []
+        -- instance ValidFloat e p => FLiteral m n r (Float e p)
+        (C.pIsFLiteral -> Just (_, _, _, C.tIsFloat -> Just (e, p)))
+          -> do e' <- importType sc env e
+                p' <- importType sc env p
+                scGlobalApply sc "Cryptol.PFLiteralFloat" [e', p']
 
         _ -> do
             let prop0' = "   " <> Text.pack (pretty prop0)

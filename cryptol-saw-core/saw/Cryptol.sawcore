@@ -1233,7 +1233,16 @@ PLiteralIntModNum num =
 PLiteralRational : PLiteral Rational;
 PLiteralRational = \ (x : Nat) -> error Rational "Unimplemented: Literal Rational";
 
--- TODO: FLiteral class
+-- Compared to Cryptol class 'FLiteral m n r a', we omit the 'm', 'n', and
+-- 'r' parameters here. They are passed explicitly to 'ecFraction' instead.
+PFLiteral : (a : sort 0) -> sort 0;
+PFLiteral a = Nat -> Nat -> Nat -> a;
+
+PFLiteralRational : PFLiteral Rational;
+PFLiteralRational =
+  \ (m n r : Nat) ->
+    ecRatio (natToInt m) (natToInt n);
+    -- The roundness flag is ignored for Rational.
 
 
 --------------------------------------------------------------------------------
@@ -1385,8 +1394,20 @@ ecZero a pa = pa;
 
 -- FLiteral
 
-ecFraction : (a : isort 0) -> a;
-ecFraction a = error a "Unimplemented: fraction";
+ecFraction : (m n r : Num) -> (a : sort 0) -> PFLiteral a -> a;
+ecFraction m n r a pf =
+  Num#rec (\ (m : Num) -> a)
+    (\ (m : Nat) ->
+      Num#rec (\ (n : Num) -> a)
+        (\ (n : Nat) ->
+          Num#rec (\ (r : Num) -> a)
+            (\ (r : Nat) -> pf m n r)
+            (pf m n 0)
+            r)
+        (pf m 1 0)
+        n)
+    (pf 0 1 0)
+    m;
 
 
 -- Sequences
@@ -1822,6 +1843,11 @@ ecScanl n a b f z =
 
 TCFloat : Num -> Num -> sort 0;
 TCFloat _ _ = #();
+
+PFLiteralFloat : (e p : Num) -> PFLiteral (TCFloat e p);
+PFLiteralFloat e p =
+  \ (_m _n _r : Nat) ->
+    error (TCFloat e p) "Unimplemented: FLiteral Float";
 
 PEqFloat : (e p : Num) -> PEq (TCFloat e p);
 PEqFloat e p = { eq = \(x y : TCFloat e p) -> error Bool "Unimplemented: (==) Float" };
