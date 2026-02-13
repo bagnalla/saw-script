@@ -118,6 +118,7 @@ data VRecursor l
      !Name -- data type name
      !Int        -- number of index parameters
      !(Map VarIndex (Thunk l)) -- constructor eliminators
+     !(Map Text (Thunk l)) -- constructor eliminators keyed by absolute name
 
 -- | The subset of values that represent types.
 data TValue l

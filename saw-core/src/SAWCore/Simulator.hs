@@ -204,7 +204,10 @@ evalTermF cfg lam recEval tf env =
                    pure $ VFun $ \_motive ->
                    vFunList (length cnames) $ \elim_thunks ->
                    do let es = Map.fromList (zip (map nameIndex cnames) elim_thunks)
-                      let vrec = VRecursor dname nixs es
+                      let esByName =
+                            Map.fromList
+                              (zip (map (toAbsoluteName . nameInfo) cnames) elim_thunks)
+                      let vrec = VRecursor dname nixs es esByName
                       vFunList nixs (\_ixs -> pure (evalRecursor vrec))
 
         Sort s _h           -> return $ TValue (VSort s)
@@ -221,28 +224,33 @@ evalTermF cfg lam recEval tf env =
     toTValue t = panic "evalTermF / toTValue" ["Not a type value: " <> Text.pack (show t)]
 
     evalRecursor :: VRecursor l -> Value l
-    evalRecursor vrec@(VRecursor d _nixs ps_fs) =
+    evalRecursor vrec@(VRecursor d _nixs ps_fs psByName) =
       vStrictFun $ \argv ->
-      case evalConstructor argv of
-        Just (ctor, args)
-          | Just elim <- Map.lookup (nameIndex (ctorName ctor)) ps_fs ->
-              do elimv <- force elim
-                 reduceRecursor (evalRecursor vrec) elimv args (ctorArgStruct ctor)
-
-          | otherwise ->
-              panic "evalTermF / evalRecursor"
-              ["Could not find info for constructor: " <> toAbsoluteName (nameInfo (ctorName ctor))]
+      case evalPackedNumericRecursor d psByName argv of
+        Just result -> result
         Nothing ->
-          case argv of
-            VCtorMux _ps branches ->
-              do alts <- traverse (evalCtorMuxBranch vrec) (IntMap.elems branches)
-                 combineAlts alts
-            VBVToNat{} ->
-              panic "evalTerF / evalRecursor"
-              ["Unsupported symbolic recursor argument of type Nat"]
-            _ ->
-              panic "evalTermF / evalRecursor"
-              ["Expected constructor for datatype: " <> toAbsoluteName (nameInfo d)]
+          case evalConstructor argv of
+            Just (ctor, args)
+              | Just elim <- Map.lookup (nameIndex (ctorName ctor)) ps_fs ->
+                  do elimv <- force elim
+                     reduceRecursor (evalRecursor vrec) elimv args (ctorArgStruct ctor)
+
+              | otherwise ->
+                  panic "evalTermF / evalRecursor"
+                  ["Could not find info for constructor: " <> toAbsoluteName (nameInfo (ctorName ctor))]
+            Nothing ->
+              case argv of
+                VCtorMux _ps branches ->
+                  do alts <- traverse (evalCtorMuxBranch vrec) (IntMap.elems branches)
+                     combineAlts alts
+                VBVToNat{} ->
+                  panic "evalTerF / evalRecursor"
+                  ["Unsupported symbolic recursor argument of type Nat"]
+                _ ->
+                  panic "evalTermF / evalRecursor"
+                  [ "Expected constructor for datatype: " <> toAbsoluteName (nameInfo d)
+                  , "Got recursor argument value: " <> Text.pack (show argv)
+                  ]
 
     evalCtorMuxBranch ::
       VRecursor l ->
@@ -250,7 +258,7 @@ evalTermF cfg lam recEval tf env =
       EvalM l (VBool l, EvalM l (Value l))
     evalCtorMuxBranch r (p, c, _ct, args) =
       case r of
-        VRecursor _d _nixs ps_fs ->
+        VRecursor _d _nixs ps_fs _psByName ->
           do let i = nameIndex c
              case (lookupVarIndexInMap i (simModMap cfg), Map.lookup i ps_fs) of
                (Just (ResolvedCtor ctor), Just elim) ->
@@ -264,6 +272,42 @@ evalTermF cfg lam recEval tf env =
     combineAlts [(_, x)] = x
     combineAlts ((p, x) : alts) = simLazyMux cfg p x (combineAlts alts)
 
+    -- Nat/Pos values are represented compactly as VNat, while recursor
+    -- eliminators are keyed by constructors (Zero/NatPos, One/Bit0/Bit1).
+    -- Handle these packed numeric forms directly.
+    evalPackedNumericRecursor :: Name -> Map Text (Thunk l) -> Value l -> Maybe (EvalM l (Value l))
+    evalPackedNumericRecursor d psByName (VNat n)
+      | isNatType d
+      , Just elimZero <- Map.lookup "Prelude.Zero" psByName
+      , Just elimNatPos <- Map.lookup "Prelude.NatPos" psByName =
+          Just $
+            if n == 0
+              then force elimZero
+              else do elim <- force elimNatPos
+                      apply elim (ready (VNat n))
+      | isPosType d
+      , Just elimOne <- Map.lookup "Prelude.One" psByName
+      , Just elimBit0 <- Map.lookup "Prelude.Bit0" psByName
+      , Just elimBit1 <- Map.lookup "Prelude.Bit1" psByName =
+          Just (goPos n elimOne elimBit0 elimBit1)
+      where
+        goPos 0 _ _ _ =
+          panic "evalTermF / evalRecursor"
+          ["Expected positive argument for datatype: Prelude.Pos"]
+        goPos 1 one _ _ = force one
+        goPos m one bit0 bit1
+          | even m =
+              do let m' = m `div` 2
+                 elim <- force bit0
+                 recArg <- delay (goPos m' one bit0 bit1)
+                 applyAll elim [ready (VNat m'), recArg]
+          | otherwise =
+              do let m' = m `div` 2
+                 elim <- force bit1
+                 recArg <- delay (goPos m' one bit0 bit1)
+                 applyAll elim [ready (VNat m'), recArg]
+    evalPackedNumericRecursor _ _ _ = Nothing
+
     evalConstructor :: Value l -> Maybe (Ctor, [Thunk l])
     evalConstructor (VCtorApp c _tv _ps args) =
       case lookupVarIndexInMap (nameIndex c) (simModMap cfg) of
@@ -271,6 +315,12 @@ evalTermF cfg lam recEval tf env =
         _ -> Nothing
     evalConstructor _ =
        Nothing
+
+    isNatType :: Name -> Bool
+    isNatType nm = toAbsoluteName (nameInfo nm) == "Prelude.Nat"
+
+    isPosType :: Name -> Bool
+    isPosType nm = toAbsoluteName (nameInfo nm) == "Prelude.Pos"
 
     recEvalDelay :: Term -> EvalM l (Thunk l)
     recEvalDelay = delay . recEval

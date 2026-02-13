@@ -1,0 +1,17 @@
+// Regression test for packed Nat/Pos values flowing through generic recursor
+// evaluation (`evalRecursor` in saw-core).
+
+enable_experimental;
+
+let natRecProp =
+  parse_core
+    "boolEq (Nat#rec (\\ (_ : Nat) -> Bool) True (\\ (_ : Pos) -> False) 8) False";
+
+let posRecProp =
+  parse_core
+    "boolEq (Pos#rec (\\ (_ : Pos) -> Bool) True (\\ (_ : Pos) (_ : Bool) -> False) (\\ (_ : Pos) (_ : Bool) -> True) (Bit0 (Bit0 (Bit0 One)))) False";
+
+prove_print z3 natRecProp;
+prove_print z3 posRecProp;
+
+print "DONE";
