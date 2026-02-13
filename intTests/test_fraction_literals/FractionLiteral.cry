@@ -1,0 +1,13 @@
+module FractionLiteral where
+
+half_dec : Rational
+half_dec = 0.5
+
+half_ratio : Rational
+half_ratio = ratio 1 2
+
+twofifths_dec : Rational
+twofifths_dec = 0.4
+
+twofifths_ratio : Rational
+twofifths_ratio = ratio 2 5

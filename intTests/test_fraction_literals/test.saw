@@ -1,0 +1,24 @@
+enable_experimental;
+
+M <- cryptol_load "FractionLiteral.cry";
+
+half_dec <- cryptol_extract M "half_dec";
+half_ratio <- cryptol_extract M "half_ratio";
+twofifths_dec <- cryptol_extract M "twofifths_dec";
+twofifths_ratio <- cryptol_extract M "twofifths_ratio";
+
+let half_dec_n = normalize_term half_dec;
+let half_ratio_n = normalize_term half_ratio;
+let twofifths_dec_n = normalize_term twofifths_dec;
+let twofifths_ratio_n = normalize_term twofifths_ratio;
+
+b1 <- is_convertible half_dec_n half_ratio_n;
+b2 <- is_convertible twofifths_dec_n twofifths_ratio_n;
+
+if b1
+then print "fraction literal sanity: 0.5 == ratio 1 2"
+else fail "fraction literal sanity failed: 0.5 != ratio 1 2";
+
+if b2
+then print "fraction literal sanity: 0.4 == ratio 2 5"
+else fail "fraction literal sanity failed: 0.4 != ratio 2 5";
