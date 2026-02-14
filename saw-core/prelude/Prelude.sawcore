@@ -2038,6 +2038,7 @@ primitive intModAdd : (n : Nat) -> IntMod n -> IntMod n -> IntMod n;
 primitive intModSub : (n : Nat) -> IntMod n -> IntMod n -> IntMod n;
 primitive intModMul : (n : Nat) -> IntMod n -> IntMod n -> IntMod n;
 primitive intModNeg : (n : Nat) -> IntMod n -> IntMod n;
+primitive intModRecip : (n : Nat) -> IntMod n -> IntMod n;
 
 
 --------------------------------------------------------------------------------

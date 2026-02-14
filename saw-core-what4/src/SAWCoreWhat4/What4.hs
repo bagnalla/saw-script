@@ -77,6 +77,7 @@ import Numeric.Natural (Natural)
 import qualified SAWCore.Recognizer as R
 import qualified SAWCore.Simulator as Sim
 import qualified SAWCore.Simulator.Prims as Prims
+import qualified SAWCore.Prim as Prim
 import SAWCore.SATQuery
 import SAWCore.SharedTerm
 import SAWCore.Simulator.Value
@@ -265,6 +266,7 @@ constMap sym =
   , ("Prelude.intModSub" , intModBinOp sym W.intSub)
   , ("Prelude.intModMul" , intModBinOp sym W.intMul)
   , ("Prelude.intModNeg" , intModUnOp sym W.intNeg)
+  , ("Prelude.intModRecip", intModRecipOp sym)
   -- Streams
   , ("Prelude.MkStream", mkStreamOp)
   , ("Prelude.streamGet", streamGetOp sym)
@@ -562,6 +564,42 @@ intModUnOp sym f =
   Prims.natFun $ \n ->
   Prims.intModFun $ \x ->
     Prims.Prim (VIntMod n <$> (normalizeIntMod sym n =<< f sym x))
+
+intModRecipOp :: IsExprBuilder sym => sym -> SPrim sym
+intModRecipOp sym =
+  Prims.natFun $ \n ->
+  Prims.intModFun $ \x ->
+    Prims.Prim $
+      if n <= 1 then
+        pure Prim.divideByZero
+      else
+        case W.asInteger x of
+          Just xi ->
+            case Prim.integerRecipMod xi (toInteger n) of
+              Just r -> VIntMod n <$> W.intLit sym r
+              Nothing -> pure Prim.divideByZero
+          Nothing ->
+            VIntMod n <$> intModRecipSym sym n x
+
+intModRecipSym ::
+  IsExprBuilder sym =>
+  sym ->
+  Natural ->
+  SInt sym ->
+  IO (SInt sym)
+intModRecipSym sym n x = do
+  modulus <- W.intLit sym (toInteger n)
+  one <- W.intLit sym 1
+  x0 <- W.intMod sym x modulus
+  let mulMod a b = do
+        prod <- W.intMul sym a b
+        W.intMod sym prod modulus
+      go acc _ 0 = pure acc
+      go acc b k = do
+        acc' <- if testBit k 0 then mulMod acc b else pure acc
+        b' <- mulMod b b
+        go acc' b' (shiftR k 1)
+  go one x0 (n - 2)
 
 normalizeIntMod :: IsExprBuilder sym => sym -> Natural -> SInt sym -> IO (SInt sym)
 normalizeIntMod sym n x =

@@ -309,6 +309,24 @@ bvShiftR c (BV w x) i = bv w (c' .|. (x `shiftR` j))
 
 
 ----------------------------------------
+-- Integer operations
+
+-- | Compute the multiplicative inverse of @x@ modulo @m@.
+-- Returns @Nothing@ when no inverse exists.
+integerRecipMod :: Integer -> Integer -> Maybe Integer
+integerRecipMod _ m | m <= 0 = Nothing
+integerRecipMod x m =
+  let (g, s, _) = extendedGCD x m
+   in if g == 1 then Just (s `mod` m) else Nothing
+  where
+    extendedGCD :: Integer -> Integer -> (Integer, Integer, Integer)
+    extendedGCD a 0 = (abs a, signum a, 0)
+    extendedGCD a b =
+      let (g, s, t) = extendedGCD b (a `mod` b)
+       in (g, t, s - (a `div` b) * t)
+
+
+----------------------------------------
 -- Errors
 
 data EvalError

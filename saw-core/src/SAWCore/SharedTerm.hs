@@ -216,6 +216,7 @@ module SAWCore.SharedTerm
   , scIntModSub
   , scIntModMul
   , scIntModNeg
+  , scIntModRecip
     -- ** Vectors
   , scAppend
   , scJoin
@@ -1653,6 +1654,12 @@ scIntModMul sc n x y = scGlobalApply sc "Prelude.intModMul" [n,x,y]
 -- > intModNeg : (n : Nat) -> IntMod n -> IntMod n;
 scIntModNeg :: SharedContext -> Term -> Term -> IO Term
 scIntModNeg sc n x = scGlobalApply sc "Prelude.intModNeg" [n,x]
+
+-- | Multiplicative inverse of @IntMod@ values
+--
+-- > intModRecip : (n : Nat) -> IntMod n -> IntMod n;
+scIntModRecip :: SharedContext -> Term -> Term -> IO Term
+scIntModRecip sc n x = scGlobalApply sc "Prelude.intModRecip" [n,x]
 
 
 -- Primitive operations on bitvectors

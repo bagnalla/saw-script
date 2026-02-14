@@ -1235,8 +1235,8 @@ PFieldRational =
 PFieldIntMod : (n : Nat) -> PField (IntMod n);
 PFieldIntMod n =
   { fieldRing = PRingIntMod n
-  , recip     = \(x : IntMod n) -> error (IntMod n) "Unimplemented: recip IntMod"
-  , fieldDiv  = \(x y : IntMod n) -> error (IntMod n) "Unimplemented: (/.) IntMod"
+  , recip     = intModRecip n
+  , fieldDiv  = \(x y : IntMod n) -> intModMul n x (intModRecip n y)
   };
 
 PFieldIntModNum : (n : Num) -> PField (IntModNum n);

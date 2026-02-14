@@ -207,6 +207,7 @@ constMap =
   , ("Prelude.intModSub" , intModBinOp svMinus)
   , ("Prelude.intModMul" , intModBinOp svTimes)
   , ("Prelude.intModNeg" , intModUnOp svUNeg)
+  , ("Prelude.intModRecip", intModRecipOp)
   -- Streams
   , ("Prelude.MkStream", mkStreamOp)
   , ("Prelude.streamGet", streamGetOp)
@@ -501,6 +502,34 @@ intModUnOp f =
   Prims.intModFun $ \x ->
   Prims.PrimValue $
     VIntMod n (normalizeIntMod n (f x))
+
+intModRecipOp :: SPrim
+intModRecipOp =
+  Prims.natFun $ \n ->
+  Prims.intModFun $ \x ->
+  Prims.PrimValue $
+    if n <= 1 then
+      Prim.divideByZero
+    else
+      case svAsInteger x of
+        Just xi ->
+          case Prim.integerRecipMod xi (toInteger n) of
+            Just r -> VIntMod n (literalSInteger r)
+            Nothing -> Prim.divideByZero
+        Nothing ->
+          VIntMod n (intModRecipSym n x)
+
+intModRecipSym :: Natural -> SInteger -> SInteger
+intModRecipSym n x = go one (svIntMod x modulus) (n - 2)
+  where
+    modulus = literalSInteger (toInteger n)
+    one = literalSInteger 1
+    mulMod a b = svIntMod (svTimes a b) modulus
+    go acc _ 0 = acc
+    go acc b k =
+      let acc' = if testBit k 0 then mulMod acc b else acc
+          b' = mulMod b b
+       in go acc' b' (shiftR k 1)
 
 normalizeIntMod :: Natural -> SInteger -> SInteger
 normalizeIntMod n x =

@@ -279,6 +279,7 @@ beConstMap be =
   , ("Prelude.intModSub" , intModBinOp (-))
   , ("Prelude.intModMul" , intModBinOp (*))
   , ("Prelude.intModNeg" , intModUnOp negate)
+  , ("Prelude.intModRecip", intModRecipOp)
   -- Streams
   , ("Prelude.MkStream", mkStreamOp)
   , ("Prelude.streamGet", streamGetOp be)
@@ -389,6 +390,14 @@ intModUnOp f =
   Prims.natFun $ \n ->
   Prims.intModFun $ \x ->
     Prims.PrimValue (VIntMod n (f x `mod` toInteger n))
+
+intModRecipOp :: BPrim l
+intModRecipOp =
+  Prims.natFun $ \n ->
+  Prims.intModFun $ \x ->
+    case Prim.integerRecipMod x (toInteger n) of
+      Just r -> Prims.PrimValue (VIntMod n r)
+      Nothing -> Prims.PrimValue Prim.divideByZero
 
 ----------------------------------------
 

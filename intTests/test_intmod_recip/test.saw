@@ -1,0 +1,9 @@
+enable_experimental;
+
+_ <- prove_print z3 {{ recip ((3 : Z 5)) == (2 : Z 5) }};
+_ <- prove_print z3 {{ recip ((2 : Z 5)) == (3 : Z 5) }};
+
+_ <- prove_print z3 {{ ((3 : Z 5) /. (2 : Z 5)) == (4 : Z 5) }};
+_ <- prove_print z3 {{ ((2 : Z 5) /. (3 : Z 5)) == (4 : Z 5) }};
+
+print "IntMod recip regression: ok";
