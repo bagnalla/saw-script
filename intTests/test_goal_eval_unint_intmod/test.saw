@@ -1,0 +1,14 @@
+enable_experimental;
+
+let {{
+  IdIM (x : [1](Z 3329)) = x
+}};
+
+_ <- prove_print do {
+  goal_eval_unint ["IdIM"];
+  z3;
+} {{
+  \(x : [1](Z 3329)) -> IdIM x == x
+}};
+
+print "Done";
