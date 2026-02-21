@@ -1,0 +1,8 @@
+print "trigger invalid rewrite rule validation";
+
+_ <- prove_core (do {
+  simplify (add_prelude_eqs ["vecEq_refl"] empty_ss);
+  trivial;
+}) "(x : Vec 8 Bool) -> EqTrue (vecEq 8 Bool boolEq x x)";
+
+print "unexpected success";

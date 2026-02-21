@@ -374,6 +374,28 @@ rulePermutes ctxt lhs rhs =
             Nothing -> False -- but here we have a looping rule, not good!
             Just _ -> True
 
+-- | Validate that all and only context variables occur in the LHS.
+--
+-- If this condition does not hold, matching cannot produce a complete
+-- instantiation for the rule context, and the rule cannot be applied.
+validateRuleLHSVars :: RewriteRule a -> Maybe String
+validateRuleLHSVars RewriteRule { ctxt, lhs } =
+  if missing == IntSet.empty && extra == IntSet.empty then
+    Nothing
+  else
+    Just $
+      unlines
+        [ "rewrite rule has invalid variable usage:"
+        , "  all context variables must occur in the lhs"
+        , "  missing ctxt vars in lhs: " ++ show (IntSet.toList missing)
+        , "  extra lhs vars not in ctxt: " ++ show (IntSet.toList extra)
+        ]
+  where
+    lhsVars = freeVars lhs
+    ctxtVars = IntSet.fromList (map (vnIndex . fst) ctxt)
+    missing = IntSet.difference ctxtVars lhsVars
+    extra = IntSet.difference lhsVars ctxtVars
+
 mkRewriteRule :: [(VarName, Term)] -> Term -> Term -> Bool -> Bool -> Maybe a -> RewriteRule a
 mkRewriteRule c l r shallow convFlag ann =
     RewriteRule
@@ -436,7 +458,13 @@ ruleOfProp sc term ann =
 
 -- | Generate a rewrite rule from the type of an identifier, using 'ruleOfTerm'
 scEqRewriteRule :: SharedContext -> Ident -> IO (RewriteRule a)
-scEqRewriteRule sc i = ruleOfTerm <$> scTypeOfIdent sc i <*> pure Nothing
+scEqRewriteRule sc i =
+  do rule <- ruleOfTerm <$> scTypeOfIdent sc i <*> pure Nothing
+     case validateRuleLHSVars rule of
+       Nothing -> pure rule
+       Just msg ->
+         fail $
+           "scEqRewriteRule: invalid rewrite rule for " ++ show i ++ "\n" ++ msg
 
 -- | Collects rewrite rules from named constants, whose types must be equations.
 scEqsRewriteRules :: SharedContext -> [Ident] -> IO [RewriteRule a]

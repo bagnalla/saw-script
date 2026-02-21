@@ -1,0 +1,14 @@
+Loading file "test.saw"
+trigger invalid rewrite rule validation
+Stack trace:
+   (builtin) in add_prelude_eqs
+   test.saw:4:13-4:52 in (callback)
+   (builtin) in prove_core
+   test.saw:3:6-6:58 (at top level)
+scEqRewriteRule: invalid rewrite rule for Prelude.vecEq_refl
+rewrite rule has invalid variable usage:
+  all context variables must occur in the lhs
+  missing ctxt vars in lhs: [1609]
+  extra lhs vars not in ctxt: []
+
+
