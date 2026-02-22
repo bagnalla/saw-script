@@ -1,0 +1,5 @@
+let thm <- prove_core z3 "\
+  (x : Vec 4 Bool) ->
+  Eq Bool x x";
+
+print "unexpected: malformed multiline string accepted";

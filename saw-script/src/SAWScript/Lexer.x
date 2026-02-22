@@ -95,9 +95,11 @@ sawTokens :-
 <string> {
 @string                          { addToString }
 @gap                             ;
+\\ $gapchar+                     { lexFail "Invalid multiline string" }
 \"                               { endString   }
 \n                               { lexFail "Invalid multiline string" }
 \\.                              { lexFail "Invalid character escape in string" }
+\\                               { lexFail "Invalid character escape in string" }
 }
 
 <0> {
