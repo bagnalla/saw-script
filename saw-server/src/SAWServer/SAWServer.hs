@@ -320,6 +320,7 @@ initialState readFileFn =
                 , rwPreservedRegs = []
                 , rwAllocSymInitCheck = True
                 , rwWhat4PushMuxOps = False
+                , rwZ3IntBlast = False
                 , rwNoSatisfyingWriteFreshConstant = True
                 , rwCrucibleTimeout = CC.defaultSAWCoreBackendTimeout
                 , rwPathSatSolver = CC.PathSat_Z3

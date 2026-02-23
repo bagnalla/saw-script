@@ -21,7 +21,7 @@ import SAWCore.FiniteValue
 import SAWCore.SATQuery (SATQuery(..))
 
 import           SAWCentral.Proof(Sequent, sequentToSATQuery, CEX)
-import           SAWCentral.Value (TopLevel, io, getSharedContext, rwWhat4PushMuxOps)
+import           SAWCentral.Value (TopLevel, io, getSharedContext, rwWhat4PushMuxOps, rwZ3IntBlast)
 
 import           Data.Parameterized.Nonce
 
@@ -132,7 +132,17 @@ proveWhat4_z3,
   SATQuery      {- ^ The query to be proved -} ->
   TopLevel (Maybe CEX, Text)
 
-proveWhat4_z3        = proveWhat4_sym z3Adapter
+proveWhat4_z3 hashConsing satq = do
+  sc <- getSharedContext
+  what4PushMuxOps <- gets rwWhat4PushMuxOps
+  z3IntBlastEnabled <- gets rwZ3IntBlast
+  io $ do
+     sym <- setupWhat4_sym hashConsing what4PushMuxOps
+     proveWhat4_solver z3Adapter sym sc satq $
+       do z3IntBlastSetting <- getOptionSetting z3IntBlast $ getConfiguration sym
+          _ <- setOpt z3IntBlastSetting z3IntBlastEnabled
+          return ()
+
 proveWhat4_bitwuzla  = proveWhat4_sym bitwuzlaAdapter
 proveWhat4_rme       = proveWhat4_sym rmeAdapter
 proveWhat4_boolector = proveWhat4_sym boolectorAdapter
@@ -151,10 +161,13 @@ proveWhat4_z3_using ::
 proveWhat4_z3_using tactic hashConsing satq = do
   sc <- getSharedContext
   what4PushMuxOps <- gets rwWhat4PushMuxOps
+  z3IntBlastEnabled <- gets rwZ3IntBlast
   io $ do
      sym <- setupWhat4_sym hashConsing what4PushMuxOps
      proveWhat4_solver z3Adapter sym sc satq $
-       do z3TacticSetting <- getOptionSetting z3Tactic $ getConfiguration sym
+       do z3IntBlastSetting <- getOptionSetting z3IntBlast $ getConfiguration sym
+          _ <- setOpt z3IntBlastSetting z3IntBlastEnabled
+          z3TacticSetting <- getOptionSetting z3Tactic $ getConfiguration sym
           _ <- setOpt z3TacticSetting $ Text.pack tactic
           return ()
 

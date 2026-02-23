@@ -1269,6 +1269,7 @@ buildTopLevelEnv opts scriptArgv tlhook pshook = do
                    , rwStackBaseAlign = defaultStackBaseAlign
                    , rwAllocSymInitCheck = True
                    , rwWhat4PushMuxOps = False
+                   , rwZ3IntBlast = False
                    , rwNoSatisfyingWriteFreshConstant = True
                    , rwCrucibleTimeout = CC.defaultSAWCoreBackendTimeout
                    , rwPathSatSolver = CC.PathSat_Z3
@@ -2216,6 +2217,16 @@ disable_what4_push_mux_ops :: TopLevel ()
 disable_what4_push_mux_ops = do
   rw <- getTopLevelRW
   putTopLevelRW rw { rwWhat4PushMuxOps = False }
+
+enable_what4_z3_intblast :: TopLevel ()
+enable_what4_z3_intblast = do
+  rw <- getTopLevelRW
+  putTopLevelRW rw { rwZ3IntBlast = True }
+
+disable_what4_z3_intblast :: TopLevel ()
+disable_what4_z3_intblast = do
+  rw <- getTopLevelRW
+  putTopLevelRW rw { rwZ3IntBlast = False }
 
 set_crucible_timeout :: Integer -> TopLevel ()
 set_crucible_timeout t = do
@@ -3254,6 +3265,18 @@ primitives = Map.fromList $
     Experimental
     [ "Do not push certain What4 operations (e.g., 'zext') down to the"
     , "branches of 'ite' expressions as much as possible."
+    ]
+
+  , prim "enable_what4_z3_intblast" "TopLevel ()"
+    (pureVal enable_what4_z3_intblast)
+    Experimental
+    [ "Enable the Z3 'xform.bit_blast' option for What4 + Z3 proofs."
+    ]
+
+  , prim "disable_what4_z3_intblast" "TopLevel ()"
+    (pureVal disable_what4_z3_intblast)
+    Experimental
+    [ "Disable the Z3 'xform.bit_blast' option for What4 + Z3 proofs."
     ]
 
   , prim "enable_crucible_profiling" "String -> TopLevel ()"
@@ -7490,4 +7513,3 @@ primEnviron opts bic cryenvs =
         varenv = ScopedMap.push $ ScopedMap.seed $ primValueEnv opts bic
     in
     Environ varenv tyenv cryenvs
-

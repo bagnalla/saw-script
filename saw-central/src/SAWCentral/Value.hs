@@ -1043,6 +1043,7 @@ data TopLevelRW =
   , rwAllocSymInitCheck :: Bool
 
   , rwWhat4PushMuxOps :: Bool
+  , rwZ3IntBlast :: Bool
   , rwNoSatisfyingWriteFreshConstant :: Bool
 
   , rwCrucibleTimeout :: Integer
