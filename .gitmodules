@@ -36,7 +36,8 @@
 	url = https://github.com/galoisinc/cryptol-specs
 [submodule "deps/what4"]
 	path = deps/what4
-	url = https://github.com/GaloisInc/what4.git
+	url = git@github.com:bagnalla/what4.git
+	branch = mlkem-bvtoint-intmod-urem-rewrite
 [submodule "deps/argo"]
 	path = deps/argo
 	url = https://github.com/galoisinc/argo
