@@ -3270,13 +3270,13 @@ primitives = Map.fromList $
   , prim "enable_what4_z3_intblast" "TopLevel ()"
     (pureVal enable_what4_z3_intblast)
     Experimental
-    [ "Enable the Z3 'xform.bit_blast' option for What4 + Z3 proofs."
+    [ "Enable the Z3 intblast backend ('smt.bv.solver=2') for What4 + Z3 proofs."
     ]
 
   , prim "disable_what4_z3_intblast" "TopLevel ()"
     (pureVal disable_what4_z3_intblast)
     Experimental
-    [ "Disable the Z3 'xform.bit_blast' option for What4 + Z3 proofs."
+    [ "Disable the Z3 intblast backend ('smt.bv.solver=2') for What4 + Z3 proofs."
     ]
 
   , prim "enable_crucible_profiling" "String -> TopLevel ()"
