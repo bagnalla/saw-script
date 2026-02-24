@@ -44,8 +44,8 @@ setOption opt =
          updateRW rw { rwWhat4HashConsing = enabled }
        EnableWhat4Eval enabled ->
          updateRW rw { rwWhat4Eval = enabled }
-       EnableWhat4Z3IntBlast enabled ->
-         updateRW rw { rwZ3IntBlast = enabled }
+       EnableWhat4IntBlast enabled ->
+         updateRW rw { rwWhat4IntBlast = enabled }
      ok
 
 data SetOptionParams
@@ -56,7 +56,7 @@ data SetOptionParams
   | EnableSMTArrayMemoryModel Bool
   | EnableWhat4HashConsing Bool
   | EnableWhat4Eval Bool
-  | EnableWhat4Z3IntBlast Bool
+  | EnableWhat4IntBlast Bool
 
 parseOption :: Object -> String -> Parser SetOptionParams
 parseOption o name =
@@ -68,7 +68,7 @@ parseOption o name =
     "SMT array memory model" -> EnableSMTArrayMemoryModel <$> o .: "value"
     "What4 hash consing" -> EnableWhat4HashConsing <$> o .: "value"
     "What4 eval" -> EnableWhat4Eval <$> o .: "value"
-    "What4 z3 intblast" -> EnableWhat4Z3IntBlast <$> o .: "value"
+    "What4 intblast" -> EnableWhat4IntBlast <$> o .: "value"
     _ -> empty
 
 instance FromJSON SetOptionParams where
@@ -87,7 +87,7 @@ instance Doc.DescribedMethod SetOptionParams OK where
                      , Doc.Literal "SMT array memory model", Doc.Text ", "
                      , Doc.Literal "What4 hash consing", Doc.Text ", or "
                      , Doc.Literal "What4 eval", Doc.Text ", or "
-                     , Doc.Literal "What4 z3 intblast"
+                     , Doc.Literal "What4 intblast"
                      ])
     ]
   resultFieldDescription = []

@@ -21,7 +21,7 @@ import SAWCore.FiniteValue
 import SAWCore.SATQuery (SATQuery(..))
 
 import           SAWCentral.Proof(Sequent, sequentToSATQuery, CEX)
-import           SAWCentral.Value (TopLevel, io, getSharedContext, rwWhat4PushMuxOps, rwZ3IntBlast)
+import           SAWCentral.Value (TopLevel, io, getSharedContext, rwWhat4PushMuxOps, rwWhat4IntBlast)
 
 import           Data.Parameterized.Nonce
 
@@ -135,19 +135,28 @@ proveWhat4_z3,
 proveWhat4_z3 hashConsing satq = do
   sc <- getSharedContext
   what4PushMuxOps <- gets rwWhat4PushMuxOps
-  z3IntBlastEnabled <- gets rwZ3IntBlast
+  what4IntBlastEnabled <- gets rwWhat4IntBlast
   io $ do
      sym <- setupWhat4_sym hashConsing what4PushMuxOps
      proveWhat4_solver z3Adapter sym sc satq $
        do z3IntBlastSetting <- getOptionSetting z3IntBlast $ getConfiguration sym
-          _ <- setOpt z3IntBlastSetting z3IntBlastEnabled
+          _ <- setOpt z3IntBlastSetting what4IntBlastEnabled
           return ()
 
 proveWhat4_bitwuzla  = proveWhat4_sym bitwuzlaAdapter
 proveWhat4_rme       = proveWhat4_sym rmeAdapter
 proveWhat4_boolector = proveWhat4_sym boolectorAdapter
 proveWhat4_cvc4      = proveWhat4_sym cvc4Adapter
-proveWhat4_cvc5      = proveWhat4_sym cvc5Adapter
+proveWhat4_cvc5 hashConsing satq = do
+  sc <- getSharedContext
+  what4PushMuxOps <- gets rwWhat4PushMuxOps
+  what4IntBlastEnabled <- gets rwWhat4IntBlast
+  io $ do
+     sym <- setupWhat4_sym hashConsing what4PushMuxOps
+     proveWhat4_solver cvc5Adapter sym sc satq $
+       do cvc5IntBlastSetting <- getOptionSetting cvc5IntBlast $ getConfiguration sym
+          _ <- setOpt cvc5IntBlastSetting what4IntBlastEnabled
+          return ()
 proveWhat4_dreal     = proveWhat4_sym drealAdapter
 proveWhat4_stp       = proveWhat4_sym stpAdapter
 proveWhat4_yices     = proveWhat4_sym yicesAdapter
@@ -161,12 +170,12 @@ proveWhat4_z3_using ::
 proveWhat4_z3_using tactic hashConsing satq = do
   sc <- getSharedContext
   what4PushMuxOps <- gets rwWhat4PushMuxOps
-  z3IntBlastEnabled <- gets rwZ3IntBlast
+  what4IntBlastEnabled <- gets rwWhat4IntBlast
   io $ do
      sym <- setupWhat4_sym hashConsing what4PushMuxOps
      proveWhat4_solver z3Adapter sym sc satq $
        do z3IntBlastSetting <- getOptionSetting z3IntBlast $ getConfiguration sym
-          _ <- setOpt z3IntBlastSetting z3IntBlastEnabled
+          _ <- setOpt z3IntBlastSetting what4IntBlastEnabled
           z3TacticSetting <- getOptionSetting z3Tactic $ getConfiguration sym
           _ <- setOpt z3TacticSetting $ Text.pack tactic
           return ()

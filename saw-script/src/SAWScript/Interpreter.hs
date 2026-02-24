@@ -1269,7 +1269,7 @@ buildTopLevelEnv opts scriptArgv tlhook pshook = do
                    , rwStackBaseAlign = defaultStackBaseAlign
                    , rwAllocSymInitCheck = True
                    , rwWhat4PushMuxOps = False
-                   , rwZ3IntBlast = False
+                   , rwWhat4IntBlast = False
                    , rwNoSatisfyingWriteFreshConstant = True
                    , rwCrucibleTimeout = CC.defaultSAWCoreBackendTimeout
                    , rwPathSatSolver = CC.PathSat_Z3
@@ -2218,15 +2218,15 @@ disable_what4_push_mux_ops = do
   rw <- getTopLevelRW
   putTopLevelRW rw { rwWhat4PushMuxOps = False }
 
-enable_what4_z3_intblast :: TopLevel ()
-enable_what4_z3_intblast = do
+enable_what4_intblast :: TopLevel ()
+enable_what4_intblast = do
   rw <- getTopLevelRW
-  putTopLevelRW rw { rwZ3IntBlast = True }
+  putTopLevelRW rw { rwWhat4IntBlast = True }
 
-disable_what4_z3_intblast :: TopLevel ()
-disable_what4_z3_intblast = do
+disable_what4_intblast :: TopLevel ()
+disable_what4_intblast = do
   rw <- getTopLevelRW
-  putTopLevelRW rw { rwZ3IntBlast = False }
+  putTopLevelRW rw { rwWhat4IntBlast = False }
 
 set_crucible_timeout :: Integer -> TopLevel ()
 set_crucible_timeout t = do
@@ -3267,16 +3267,18 @@ primitives = Map.fromList $
     , "branches of 'ite' expressions as much as possible."
     ]
 
-  , prim "enable_what4_z3_intblast" "TopLevel ()"
-    (pureVal enable_what4_z3_intblast)
-    Experimental
-    [ "Enable the Z3 intblast backend ('smt.bv.solver=2') for What4 + Z3 proofs."
+  , prim "enable_what4_intblast" "TopLevel ()"
+    (pureVal enable_what4_intblast)
+    Current
+    [ "Enable What4 intblasting for solvers that support it."
+    , "This currently enables Z3 ('smt.bv.solver=2') and cvc5"
+    , "('--solve-bv-as-int=iand')."
     ]
 
-  , prim "disable_what4_z3_intblast" "TopLevel ()"
-    (pureVal disable_what4_z3_intblast)
-    Experimental
-    [ "Disable the Z3 intblast backend ('smt.bv.solver=2') for What4 + Z3 proofs."
+  , prim "disable_what4_intblast" "TopLevel ()"
+    (pureVal disable_what4_intblast)
+    Current
+    [ "Disable What4 intblasting for solvers that support it."
     ]
 
   , prim "enable_crucible_profiling" "String -> TopLevel ()"

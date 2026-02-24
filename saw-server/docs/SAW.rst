@@ -882,7 +882,7 @@ Parameter fields
 
 
 ``option``
-  The option to set and its accompanying value (i.e., true or false); one of the following:``lax arithmetic``, ``lax pointer ordering``, ``lax loads and stores``, ``debug intrinsics``, ``SMT array memory model``, ``What4 hash consing``, or ``What4 eval``
+  The option to set and its accompanying value (i.e., true or false); one of the following:``lax arithmetic``, ``lax pointer ordering``, ``lax loads and stores``, ``debug intrinsics``, ``SMT array memory model``, ``What4 hash consing``, ``What4 eval``, or ``What4 intblast``
   
   
 
@@ -929,8 +929,6 @@ Return fields
 +++++++++++++
 
 No return fields
-
-
 
 
 
