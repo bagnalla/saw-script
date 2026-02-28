@@ -148,6 +148,7 @@ import qualified Mir.Trans as Mir
 import qualified Mir.TransTy as Mir
 
 import qualified What4.Config as W4
+import qualified What4.Expr.Builder as W4
 import qualified What4.Interface as W4
 import qualified What4.ProgramLoc as W4
 
@@ -2163,6 +2164,9 @@ setupCrucibleContext rm =
      pathSatSolver <- gets rwPathSatSolver
      sym <- io $ newSAWCoreExprBuilder sc False
      timeout <- gets rwCrucibleTimeout
+     crucibleAssertThenAssume <- gets rwCrucibleAssertThenAssume
+     what4HashConsing <- gets rwWhat4HashConsing
+     what4PushMuxOps <- gets rwWhat4PushMuxOps
      someBak@(SomeOnlineBackend bak) <- io $
            newSAWCoreBackendWithTimeout pathSatSolver sym timeout
      let cs     = rm ^. Mir.rmCS
@@ -2172,6 +2176,13 @@ setupCrucibleContext rm =
      io $ do let cfg = W4.getConfiguration sym
              verbSetting <- W4.getOptionSetting W4.verbosity cfg
              _ <- W4.setOpt verbSetting $ toInteger $ simVerbose opts
+             cacheTermsSetting <- W4.getOptionSetting W4.cacheTerms cfg
+             _ <- W4.setOpt cacheTermsSetting what4HashConsing
+             pushMuxOpsSetting <- W4.getOptionSetting W4.pushMuxOpsOption cfg
+             _ <- W4.setOpt pushMuxOpsSetting what4PushMuxOps
+             assertThenAssumeSetting <-
+               W4.getOptionSetting Crucible.assertThenAssumeConfigOption cfg
+             _ <- W4.setOpt assertThenAssumeSetting crucibleAssertThenAssume
              return ()
 
      -- TODO! there's a lot of options setup we need to replicate
