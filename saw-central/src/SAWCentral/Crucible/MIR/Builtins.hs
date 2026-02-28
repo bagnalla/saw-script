@@ -1461,11 +1461,17 @@ verifyObligations cc mspec tactic assumes asserts =
   do let sym = cc^.mccSym
      st <- io $ sawCoreState sym
      let sc = saw_ctx st
-     assume <- io $ scAndList sc (toListOf (folded . Crucible.labeledPred) assumes)
+     useSequentGoals <- rwSequentGoals <$> getTopLevelRW
+     let assumeTerms = toListOf (folded . Crucible.labeledPred) assumes
+     assume <- io $ scAndList sc assumeTerms
      let nm = show $ mspec ^. MS.csMethod
      outs <- forM (zip [(0::Int)..] asserts) $ \(n, (msg, md, assert)) -> do
        goal   <- io $ scImplies sc assume assert
        goal'  <- io $ boolToProp sc [] goal -- TODO, generalize over inputs
+       sqt <- if useSequentGoals then
+                 io $ booleansToSequent sc assumeTerms [assert]
+              else
+                 return (propToSequent goal')
        let ploc = MS.conditionLoc md
        let gloc = (unwords [show (W4.plSourceLoc ploc)
                           ,"in"
@@ -1479,14 +1485,14 @@ verifyObligations cc mspec tactic assumes asserts =
                        , goalName = nm
                        , goalLoc  = gloc
                        , goalDesc = msg
-                       , goalSequent = propToSequent goal'
+                       , goalSequent = sqt
                        , goalTags = MS.conditionTags md
                        }
        res <- runProofScript tactic goal' proofgoal (Just ploc)
                 (Text.unwords
                  ["MIR verification condition:", Text.pack (show n), Text.pack goalname])
                 False -- do not record in the theorem database
-                False -- TODO, useSequentGoals...
+                useSequentGoals
        case res of
          ValidProof stats thm ->
            return (stats, MS.VCStats md stats (thmSummary thm) (thmNonce thm) (thmDepends thm) (thmElapsedTime thm))
