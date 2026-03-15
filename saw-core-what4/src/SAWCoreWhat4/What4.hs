@@ -270,6 +270,7 @@ constMap sym =
   -- Streams
   , ("Prelude.MkStream", mkStreamOp)
   , ("Prelude.streamGet", streamGetOp sym)
+  , ("Prelude.streamTake", streamTakeOp)
   -- Misc
   , ("Prelude.expByNat", Prims.expByNatOp (prims sym))
   ]
@@ -634,6 +635,19 @@ streamGet sym xs ix =
         do ilv <- toWord sym w
            selectV sym (lazyMux @sym (muxBVal sym)) ((2 ^ SW.bvWidth ilv) - 1) (lookupSStream xs) ilv
       v -> panic "streamGetOp" ["Expected Nat value, found: " <> Text.pack (show v)]
+
+-- streamTake :: (a : sort 0) -> (n : Nat) -> Stream a -> Vec n a;
+streamTakeOp :: forall sym. SPrim sym
+streamTakeOp =
+  Prims.tvalFun   $ \_tp ->
+  Prims.natFun    $ \n ->
+  Prims.strictFun $ \xs ->
+  Prims.Prim $
+    do let mkElt i = delay (lookupSStream xs (fromIntegral i))
+       if toInteger n > toInteger (maxBound :: Int) then
+         panic "streamTakeOp" ["Vector size too large: " <> Text.pack (show n)]
+       else
+         VVector <$> V.generateM (fromIntegral n) mkElt
 
 lookupSStream :: SValue sym -> Natural -> IO (SValue sym)
 lookupSStream (VExtra (SStream f r)) n = do
